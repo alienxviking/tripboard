@@ -1,0 +1,43 @@
+# Run the whole stack locally:   docker compose -f docker/docker-compose.yml up --build
+name: tripboard
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tripboard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tripboard-local}
+      POSTGRES_DB: tripboard
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tripboard -d tripboard"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://tripboard:${POSTGRES_PASSWORD:-tripboard-local}@postgres:5432/tripboard
+      ENVIRONMENT: docker-compose
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+    environment:
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:8080"
+
+volumes:
+  pgdata:
