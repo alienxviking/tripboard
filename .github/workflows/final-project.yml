@@ -184,6 +184,13 @@ jobs:
           curl -sf -X POST localhost:8080/api/trips -H 'Content-Type: application/json' \
             -d '{"destination":"CI smoke test","start_date":"2026-01-01","end_date":"2026-01-02","budget":1}'
           curl -sf localhost:8080/api/trips
+      - name: Debug info on failure
+        if: failure()
+        run: |
+          kubectl get pods,pvc,events -n tripboard
+          kubectl describe pods -n tripboard | tail -60
+          kubectl logs -n tripboard -l app.kubernetes.io/component=backend --tail=30 || true
+          kubectl logs -n tripboard -l app.kubernetes.io/component=frontend --tail=30 || true
 
   gitops-update:
     name: Update GitOps manifest (Argo CD deploys it)
