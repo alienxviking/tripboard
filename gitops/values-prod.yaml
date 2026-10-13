@@ -25,4 +25,4 @@ postgres:
   existingSecret: tripboard-database
 
 ingress:
-  host: tripbaord.local
+  host: tripboard.local
