@@ -1,0 +1,2 @@
+# SAST for the backend - used by the pipeline: bandit -r application/backend/app -c security/bandit.yaml
+exclude_dirs: ["tests", "alembic"]

@@ -1,0 +1,15 @@
+# Argo CD (installed by terraform/addons.tf) - plain HTTP behind ingress-nginx
+configs:
+  params:
+    server.insecure: true
+  cm:
+    timeout.reconciliation: 60s
+server:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: argocd.local
+dex:
+  enabled: false
+notifications:
+  enabled: false

@@ -1,0 +1,28 @@
+# Production values for the tripboard Helm chart.
+# Argo CD watches this file. The CI pipeline updates the image tags below after a
+# successful build + scan + push, then Argo CD rolls the new version out.
+environment: production
+
+image:
+  backend:
+    repository: ghcr.io/alienxviking/tripboard-backend
+    tag: "0000000"
+  frontend:
+    repository: ghcr.io/alienxviking/tripboard-frontend
+    tag: "0000000"
+
+backend:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+
+frontend:
+  replicaCount: 2
+
+postgres:
+  # created by terraform (random password), never stored in git
+  existingSecret: tripboard-db
+
+ingress:
+  host: tripboard.local

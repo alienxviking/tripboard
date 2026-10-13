@@ -1,0 +1,9 @@
+title = "tripboard gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "local dev defaults and test data, not real secrets"
+regexes = ['''tripboard-local''', '''change-me-dev''']
+paths = ['''application/backend/tests/''']

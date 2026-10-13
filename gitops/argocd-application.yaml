@@ -1,0 +1,30 @@
+# Argo CD Application for TripBoard.
+# Source 1: the Helm chart in this repo. Source 2: the same repo, used only as "$values"
+# so the chart can read gitops/values-prod.yaml (the file CI updates with new image tags).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tripboard
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/alienxviking/devops-homework.git
+      targetRevision: main
+      path: final-devops-project/helm/tripboard
+      helm:
+        releaseName: tripboard
+        valueFiles:
+          - $values/final-devops-project/gitops/values-prod.yaml
+    - repoURL: https://github.com/alienxviking/devops-homework.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tripboard
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false   # namespace comes from kubernetes/namespace.yaml (pod security labels)

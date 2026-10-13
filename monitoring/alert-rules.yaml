@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tripboard-alerts
+  namespace: tripboard
+spec:
+  groups:
+    - name: tripboard.rules
+      rules:
+        - alert: TripboardBackendDown
+          expr: sum(up{namespace="tripboard", service="tripboard-backend"}) < 1
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No TripBoard backend pod is being scraped"
+        - alert: TripboardHigh5xxRate
+          expr: |
+            sum(rate(http_requests_total{namespace="tripboard", status="5xx"}[5m]))
+              / sum(rate(http_requests_total{namespace="tripboard"}[5m])) > 0.05
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "More than 5% of TripBoard API requests fail with 5xx"
+        - alert: TripboardSlowRequests
+          expr: |
+            histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{namespace="tripboard"}[5m]))) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "p95 latency of the TripBoard API is above 500ms"
+        - alert: TripboardPodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="tripboard"}[10m]) > 2
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.pod }} restarted more than twice in 10 minutes"
