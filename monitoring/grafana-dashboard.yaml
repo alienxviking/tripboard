@@ -23,7 +23,7 @@ data:
         {
           "id": 1,
           "type": "stat",
-          "title": "Backend pods up",
+          "title": "Backend up",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -98,7 +98,7 @@ data:
           },
           "targets": [
             {
-              "expr": "sum(rate(http_requests_total{namespace=\"tripboard\", status=\"5xx\"}[5m])) / sum(rate(http_requests_total{namespace=\"tripboard\"}[5m]))",
+              "expr": "(sum(rate(http_requests_total{namespace=\"tripboard\", status=\"5xx\"}[5m])) or vector(0)) / sum(rate(http_requests_total{namespace=\"tripboard\"}[5m]))",
               "legendFormat": "",
               "refId": "A"
             }

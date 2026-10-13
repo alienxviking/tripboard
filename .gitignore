@@ -5,3 +5,7 @@ node_modules/
 dist/
 *.tfstate*
 .terraform/
+terraform/tripboard-config
+terraform/tfplan
+*.log
+screenshots/*.txt

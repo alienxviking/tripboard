@@ -15,10 +15,10 @@ def panel(pid, kind, title, expr, legend, x, y, w, h, unit="short"):
 
 
 panels = [
-    panel(1, "stat", "Backend pods up", f'sum(up{{{NS}, service="tripboard-backend"}})', "", 0, 0, 4, 4),
+    panel(1, "stat", "Backend up", f'sum(up{{{NS}, service="tripboard-backend"}})', "", 0, 0, 4, 4),
     panel(2, "stat", "Requests / s", f"sum(rate(http_requests_total{{{NS}}}[2m]))", "", 4, 0, 5, 4, "reqps"),
     panel(3, "stat", "5xx error rate",
-          f'sum(rate(http_requests_total{{{NS}, status="5xx"}}[5m])) / sum(rate(http_requests_total{{{NS}}}[5m]))',
+          f'(sum(rate(http_requests_total{{{NS}, status="5xx"}}[5m])) or vector(0)) / sum(rate(http_requests_total{{{NS}}}[5m]))',
           "", 9, 0, 5, 4, "percentunit"),
     panel(4, "stat", "p95 latency",
           f"histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{{{NS}}}[5m])))",
