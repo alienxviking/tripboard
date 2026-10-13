@@ -22,7 +22,7 @@ frontend:
 
 postgres:
   # created by terraform (random password), never stored in git
-  existingSecret: tripboard-database
+  existingSecret: tripboard-db
 
 ingress:
   host: tripboard.local
