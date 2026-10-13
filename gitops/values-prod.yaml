@@ -9,7 +9,7 @@ image:
     tag: "25eb7f6"
   frontend:
     repository: ghcr.io/alienxviking/tripboard-frontend
-    tag: "25eb7f7"
+    tag: "25eb7f6"
 
 backend:
   autoscaling:
