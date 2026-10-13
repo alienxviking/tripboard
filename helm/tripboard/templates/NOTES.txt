@@ -1,0 +1,4 @@
+TripBoard {{ .Chart.AppVersion }} ({{ .Values.environment }}) - backend {{ .Values.image.backend.tag }}, frontend {{ .Values.image.frontend.tag }}
+{{- if .Values.ingress.enabled }}
+Open http://{{ .Values.ingress.host }}/   (API: http://{{ .Values.ingress.host }}/api/trips)
+{{- end }}

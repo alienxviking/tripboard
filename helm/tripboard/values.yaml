@@ -1,0 +1,47 @@
+environment: dev
+
+image:
+  backend:
+    repository: ghcr.io/alienxviking/tripboard-backend
+    tag: latest
+  frontend:
+    repository: ghcr.io/alienxviking/tripboard-frontend
+    tag: latest
+  pullPolicy: IfNotPresent
+
+backend:
+  replicaCount: 2
+  resources:
+    requests: { cpu: 50m, memory: 96Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+frontend:
+  replicaCount: 2
+  resources:
+    requests: { cpu: 20m, memory: 32Mi }
+    limits: { cpu: 200m, memory: 64Mi }
+
+postgres:
+  image: postgres:16-alpine
+  database: tripboard
+  user: tripboard
+  # dev only - prod uses an existing secret created by terraform (keys: POSTGRES_PASSWORD, DATABASE_URL)
+  password: change-me-dev
+  existingSecret: ""
+  storage: 1Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: tripboard.local
+
+monitoring:
+  serviceMonitor: true
+
+networkPolicy:
+  enabled: true
