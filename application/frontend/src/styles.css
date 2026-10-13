@@ -1,0 +1,21 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f4f6fb; color: #1f2937; }
+main { max-width: 900px; margin: 40px auto; padding: 0 16px; }
+header h1 { margin: 0; color: #2563eb; }
+header p { color: #6b7280; margin-top: 4px; }
+.tag { background: #e0e7ff; color: #3730a3; border-radius: 999px; padding: 2px 10px; font-size: 13px; margin-left: 6px; }
+.card { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-top: 18px; }
+form.card { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; }
+input { padding: 9px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+button { padding: 9px 14px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; cursor: pointer; font-size: 14px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid #eef0f4; font-size: 14px; }
+th { color: #6b7280; font-weight: 600; }
+.summary { display: flex; justify-content: space-between; color: #374151; font-weight: 600; }
+.status { padding: 4px 10px; font-size: 12px; text-transform: capitalize; }
+.status.planned { background: #f59e0b; }
+.status.booked { background: #2563eb; }
+.status.done { background: #16a34a; }
+.link { background: none; color: #dc2626; padding: 0; }
+.error { color: #dc2626; }
+.empty { color: #9ca3af; text-align: center; }
