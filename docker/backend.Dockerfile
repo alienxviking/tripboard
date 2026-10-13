@@ -13,7 +13,7 @@ COPY --from=build /venv /venv
 COPY application/backend/app ./app
 COPY application/backend/alembic ./alembic
 COPY application/backend/alembic.ini .
-COPY docker/backend-entrypoint.sh /entrypoint.sh
+COPY --chmod=0755 docker/backend-entrypoint.sh /entrypoint.sh
 ARG APP_VERSION=dev
 ENV PATH="/venv/bin:$PATH" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 APP_VERSION=${APP_VERSION}
 USER 10001

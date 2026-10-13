@@ -12,6 +12,6 @@ USER root
 RUN apk upgrade --no-cache
 COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
-ENV BACKEND_URL=http://backend:8000
+ENV BACKEND_URL=http://backend:8000 NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 USER 101
 EXPOSE 8080

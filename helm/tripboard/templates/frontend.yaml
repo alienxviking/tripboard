@@ -28,7 +28,7 @@ spec:
             {{- include "tripboard.containerSecurity" . | nindent 12 }}
           env:
             - name: BACKEND_URL
-              value: "http://{{ include "tripboard.fullname" . }}-backend:8000"
+              value: "http://{{ include "tripboard.fullname" . }}-backend.{{ .Release.Namespace }}.svc.cluster.local:8000"
           ports:
             - name: http
               containerPort: 8080
