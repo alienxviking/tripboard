@@ -12,6 +12,9 @@ image:
     tag: "25eb7f6"
 
 backend:
+  resources:
+    limits:
+      memory: 48Mi
   autoscaling:
     enabled: true
     minReplicas: 2
