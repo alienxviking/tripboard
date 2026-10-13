@@ -13,8 +13,6 @@ image:
 
 backend:
   resources:
-    requests:
-      memory: 32Mi
     limits:
       memory: 48Mi
   autoscaling:
