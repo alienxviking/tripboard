@@ -28,8 +28,9 @@ resource "aws_subnet" "public" {
   availability_zone       = local.azs[count.index]
   map_public_ip_on_launch = true
   tags = {
-    Name                     = "tripboard-public-${local.azs[count.index]}"
-    "kubernetes.io/role/elb" = "1"
+    Name                                        = "tripboard-public-${local.azs[count.index]}"
+    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
 
@@ -39,8 +40,9 @@ resource "aws_subnet" "private" {
   cidr_block        = var.private_subnet_cidrs[count.index]
   availability_zone = local.azs[count.index]
   tags = {
-    Name                              = "tripboard-private-${local.azs[count.index]}"
-    "kubernetes.io/role/internal-elb" = "1"
+    Name                                        = "tripboard-private-${local.azs[count.index]}"
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
 

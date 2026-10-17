@@ -1,5 +1,7 @@
 # Copy to terraform.tfvars and adjust. Never put AWS keys in this file -
 # use `aws configure`, AWS_PROFILE or environment variables instead.
+
+# --- local: kind cluster + LocalStack ---
 aws_region           = "ap-south-1"
 use_localstack       = true
 cluster_name         = "tripboard"
@@ -9,6 +11,9 @@ vpc_cidr             = "10.30.0.0/16"
 public_subnet_cidrs  = ["10.30.1.0/24", "10.30.2.0/24"]
 private_subnet_cidrs = ["10.30.11.0/24", "10.30.12.0/24"]
 
-# real AWS only:
-# use_localstack = false
-# create_eks     = true
+# --- real AWS: EKS instead of kind (costs money while it runs - destroy when done) ---
+# use_localstack          = false
+# create_eks              = true
+# eks_version             = "1.36"
+# eks_node_instance_types = ["m7i-flex.large"]
+# eks_node_count          = 2

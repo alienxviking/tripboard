@@ -30,19 +30,42 @@ provider "aws" {
   }
 }
 
-# --- Kubernetes / Helm: talk to the kind cluster created in cluster.tf -------
+# --- Kubernetes / Helm: talk to the cluster created in cluster.tf (kind) or eks.tf (EKS) ---
+# kind uses client certificates, EKS uses a short-lived token from `aws eks get-token`.
+locals {
+  k8s_host        = var.create_eks ? aws_eks_cluster.main[0].endpoint : kind_cluster.this[0].endpoint
+  k8s_ca          = var.create_eks ? base64decode(aws_eks_cluster.main[0].certificate_authority[0].data) : kind_cluster.this[0].cluster_ca_certificate
+  k8s_client_cert = var.create_eks ? null : kind_cluster.this[0].client_certificate
+  k8s_client_key  = var.create_eks ? null : kind_cluster.this[0].client_key
+  eks_token_args  = ["eks", "get-token", "--cluster-name", var.cluster_name, "--region", var.aws_region]
+}
+
 provider "kubernetes" {
-  host                   = kind_cluster.this.endpoint
-  client_certificate     = kind_cluster.this.client_certificate
-  client_key             = kind_cluster.this.client_key
-  cluster_ca_certificate = kind_cluster.this.cluster_ca_certificate
+  host                   = local.k8s_host
+  client_certificate     = local.k8s_client_cert
+  client_key             = local.k8s_client_key
+  cluster_ca_certificate = local.k8s_ca
+
+  dynamic "exec" {
+    for_each = var.create_eks ? [1] : []
+    content {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = local.eks_token_args
+    }
+  }
 }
 
 provider "helm" {
   kubernetes = {
-    host                   = kind_cluster.this.endpoint
-    client_certificate     = kind_cluster.this.client_certificate
-    client_key             = kind_cluster.this.client_key
-    cluster_ca_certificate = kind_cluster.this.cluster_ca_certificate
+    host                   = local.k8s_host
+    client_certificate     = local.k8s_client_cert
+    client_key             = local.k8s_client_key
+    cluster_ca_certificate = local.k8s_ca
+    exec = var.create_eks ? {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = local.eks_token_args
+    } : null
   }
 }

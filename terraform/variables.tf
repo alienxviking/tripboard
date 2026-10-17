@@ -46,12 +46,41 @@ variable "private_subnet_cidrs" {
 }
 
 variable "create_eks" {
-  description = "Create an EKS cluster + node group (real AWS only - LocalStack community has no EKS API)"
+  description = "true = EKS cluster on real AWS instead of kind (LocalStack community has no EKS API)"
   type        = bool
   default     = false
+
+  validation {
+    condition     = !(var.create_eks && var.use_localstack)
+    error_message = "create_eks needs real AWS: set use_localstack = false."
+  }
+}
+
+variable "eks_version" {
+  description = "keep this on a version in standard support - extended support costs 6x more per hour"
+  type        = string
+  default     = "1.36"
 }
 
 variable "eks_node_instance_types" {
+  # free-tier eligible on the AWS free plan; 8 GiB + up to 29 pods per node with the VPC CNI
   type    = list(string)
-  default = ["t3.medium"]
+  default = ["m7i-flex.large"]
+}
+
+variable "eks_node_count" {
+  type    = number
+  default = 2
+}
+
+variable "eks_edge_instance_type" {
+  description = "small public node that runs ingress-nginx (no load balancer on this account)"
+  type        = string
+  default     = "t3.small"
+}
+
+variable "ingress_allowed_cidrs" {
+  description = "who may reach the edge node on port 80 - pass your own IP with -var, don't commit it"
+  type        = list(string)
+  default     = []
 }

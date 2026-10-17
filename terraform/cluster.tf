@@ -1,6 +1,8 @@
 # Local Kubernetes cluster (kind = Kubernetes nodes running as Docker containers).
-# It plays the role EKS would play on AWS: 1 control plane + worker nodes.
+# It plays the role EKS plays on AWS: 1 control plane + worker nodes.
+# Skipped when create_eks = true (then eks.tf creates the cluster).
 resource "kind_cluster" "this" {
+  count          = var.create_eks ? 0 : 1
   name           = var.cluster_name
   node_image     = "kindest/node:${var.kubernetes_version}"
   wait_for_ready = true
