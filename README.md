@@ -12,7 +12,7 @@ final-devops-project/
 ├── docker/                 backend + frontend Dockerfiles (multi-stage, non-root), nginx template, docker-compose.yml
 ├── kubernetes/             namespace with Pod Security "restricted"
 ├── helm/tripboard/         Helm chart: backend, frontend, postgres StatefulSet, ingress, HPA, probes, NetworkPolicy, ServiceMonitor, helm test
-├── terraform/              kind cluster + cluster add-ons (Helm) + app bootstrap + AWS VPC/S3 (+ EKS for real AWS)
+├── terraform/              kind or EKS cluster + cluster add-ons (Helm) + app bootstrap + AWS VPC/NAT/S3
 ├── .github/workflows/      -> pipeline lives in the repo root: ../.github/workflows/final-project.yml
 ├── security/               bandit + gitleaks configs
 ├── monitoring/             kube-prometheus-stack values, Grafana dashboard, alert rules
@@ -53,7 +53,7 @@ flowchart LR
     end
     argo -->|watch git| gh
     ghcr -->|pull| app
-    tf[Terraform] -->|kind, helm add-ons,<br/>namespace + DB secret| k8s
+    tf[Terraform] -->|kind or EKS, helm add-ons,<br/>namespace + DB secret| k8s
     tf -->|VPC, subnets, NAT, S3| aws[(AWS / LocalStack)]
 ```
 
@@ -70,9 +70,9 @@ Delivery path: commit → pipeline (test, scan, build, scan, push) → pipeline 
 | Containers | Docker multi-stage builds, docker compose, nginx-unprivileged |
 | CI/CD | GitHub Actions, GitHub Container Registry |
 | DevSecOps | Bandit + Semgrep (SAST), pip-audit + npm audit (SCA), Gitleaks (secrets), Trivy (images), Pod Security "restricted", NetworkPolicy, non-root containers |
-| Kubernetes | kind (v1.33), ingress-nginx, metrics-server, HPA, probes, StatefulSet + PVC |
+| Kubernetes | kind (v1.33) locally, **Amazon EKS 1.36** on AWS, ingress-nginx, metrics-server, HPA, probes, StatefulSet + PVC (EBS gp3 on EKS) |
 | Packaging | Helm 3 |
-| IaC | Terraform (kind, helm, kubernetes, aws, random providers), LocalStack |
+| IaC | Terraform (kind, helm, kubernetes, aws, random providers), LocalStack locally, real AWS for EKS |
 | Monitoring | kube-prometheus-stack (Prometheus, Alertmanager, Grafana), prometheus-fastapi-instrumentator |
 | GitOps | Argo CD 3.5 (multi-source Application, auto-sync, prune, self-heal) |
 
@@ -119,9 +119,16 @@ docker compose -f docker/docker-compose.yml up --build -d
 | [addons.tf](terraform/addons.tf) | Helm releases: ingress-nginx, metrics-server, kube-prometheus-stack, Argo CD |
 | [app-bootstrap.tf](terraform/app-bootstrap.tf) | namespace `tripboard` (Pod Security restricted) + `tripboard-db` secret with a **random password** (never in git) |
 | [aws-network.tf](terraform/aws-network.tf) | VPC 10.30.0.0/16, **2 public + 2 private subnets** in 2 AZs, IGW, NAT gateway, route tables, S3 backup bucket (versioning, encryption, lifecycle, no public access) |
-| [eks.tf](terraform/eks.tf) | EKS cluster + managed node group + IAM roles, behind `create_eks` (real AWS only) |
+| [eks.tf](terraform/eks.tf) | EKS cluster, node groups, add-ons (VPC CNI, EBS CSI, Pod Identity...), IAM roles, gp3 StorageClass - only when `create_eks = true` (real AWS) |
 
-> **Honest note:** I don't have an AWS account, so the AWS provider points to **LocalStack** (AWS emulator) and the Kubernetes cluster is **kind** instead of EKS. LocalStack community edition has no EKS API, so `eks.tf` is written for real AWS (`use_localstack=false, create_eks=true`) but was not applied. [terraform.tfvars.example](terraform/terraform.tfvars.example) is committed, but no credentials.
+The same Terraform code has two modes:
+
+| Mode | Cluster | AWS | Run with |
+|---|---|---|---|
+| local (default) | kind | LocalStack emulator | `terraform apply` |
+| real AWS | **EKS** (`eks.tf`) | real account, ap-south-1 | `terraform apply -var-file=eks.tfvars` (see [3b](#3b-real-aws-run-eks)) |
+
+The run below is the local mode (LocalStack community edition has no EKS API, so kind plays the cluster). [terraform.tfvars.example](terraform/terraform.tfvars.example) is committed, but no credentials.
 
 ![init](screenshots/10-terraform-init-validate.png)
 ![plan](screenshots/11-terraform-plan.png)
@@ -132,6 +139,102 @@ docker compose -f docker/docker-compose.yml up --build -d
 `terraform destroy` at the end removed all 28 resources:
 
 ![destroy](screenshots/50-terraform-destroy.png)
+
+## 3b. Real AWS run: EKS
+
+Later I got an AWS account (free plan with credits), so I ran the same project on **Amazon EKS** in `ap-south-1`. Same Terraform code, a separate workspace (`eks`) and [eks.tfvars](terraform/eks.tfvars). The Helm chart, the Argo CD Application and `gitops/values-prod.yaml` did not change at all.
+
+```mermaid
+flowchart LR
+    me((my browser /<br/>curl)) -->|HTTP :80<br/>SG: my IP only| edge
+    subgraph aws[AWS ap-south-1 - VPC 10.30.0.0/16]
+      subgraph pub[public subnets]
+        edge[edge node t3.small<br/>ingress-nginx hostPort 80]
+        nat[NAT gateway]
+      end
+      subgraph priv[private subnets, 2 AZs]
+        n1[node m7i-flex.large<br/>ap-south-1a]
+        n2[node m7i-flex.large<br/>ap-south-1b]
+        ebs[(EBS gp3<br/>postgres PVC)]
+      end
+      cp[EKS control plane 1.36<br/>managed by AWS]
+    end
+    edge --> n1 & n2
+    n1 & n2 -->|pull images| nat --> ghcr[(GHCR)]
+    n2 --- ebs
+```
+
+| What | How |
+|---|---|
+| Cluster | EKS 1.36 (standard support - 1.33 is already in paid extended support), access entries API, the IAM user that runs Terraform is admin |
+| Nodes | managed node group `default`: 2 × m7i-flex.large in the **private** subnets (internet via NAT); node group `edge`: 1 × t3.small in a public subnet, tainted so only ingress runs there |
+| Add-ons | `vpc-cni` with **network policy** enforcement on, `kube-proxy`, `coredns`, `eks-pod-identity-agent`, `aws-ebs-csi-driver` |
+| Storage | EBS CSI driver gets its AWS permissions through **EKS Pod Identity** (only its service account, not every pod on the node); default StorageClass `gp3`, encrypted |
+| Ingress | ingress-nginx on the edge node, port 80 opened in the security group only for my IP (passed with `-var`, not committed) |
+| Credentials | `aws configure` (IAM user), nothing in the code; kubeconfig via `aws eks update-kubeconfig`, tokens from `aws eks get-token` |
+
+### Config and plan
+
+![account and config](screenshots/60-eks-account-and-config.png)
+![plan](screenshots/61-eks-terraform-plan.png)
+
+### Apply - and two real problems
+
+VPC, NAT, EKS (about 8.5 minutes for the control plane), node group and add-ons were created, then the apply **failed at ingress-nginx**:
+
+![apply](screenshots/62-eks-terraform-apply.png)
+
+**Problem 1 - no load balancer.** On EKS the normal way is `service.type: LoadBalancer`, and AWS creates an NLB. The service stayed `<pending>`. The events, and the same call by hand, show that the account itself is not allowed to create load balancers (`OperationNotPermitted` - a limit on new free-plan accounts that only AWS Support can lift):
+
+![no load balancer](screenshots/63-eks-problem-no-load-balancer.png)
+
+Fix: a small **edge node group** in a public subnet with the label `ingress-ready=true` and a taint, and ingress-nginx runs there with `hostPort: 80` (the same idea as on kind). The security group rule allows port 80 only from my IP.
+
+![edge node fix](screenshots/64-eks-fix-edge-node-apply.png)
+
+**Problem 2 - "didn't have free ports".** The ingress pod still did not schedule on the edge node. The **EKS Pod Identity Agent** daemonset declares port 80 as a host port on every node, so the scheduler saw a conflict. Nothing on the edge node uses Pod Identity, so I gave the add-on a node affinity that skips `ingress-ready` nodes. After that the apply finished:
+
+![hostport conflict fix](screenshots/65-eks-fix-hostport-conflict.png)
+
+Both fixes are in [eks.tf](terraform/eks.tf) and [addons.tf](terraform/addons.tf) now, so a fresh `apply` works in one go.
+
+### Verify the cluster and AWS resources
+
+![cluster](screenshots/66-eks-verify-cluster.png)
+![aws](screenshots/67-eks-verify-aws.png)
+
+### GitOps deploy on EKS
+
+The same `kubectl apply -f gitops/argocd-application.yaml` as on kind. Argo CD pulled the chart and `values-prod.yaml` from GitHub and deployed the app. The postgres PVC became a real **encrypted EBS gp3 volume**:
+
+![gitops bootstrap](screenshots/68-eks-gitops-bootstrap.png)
+
+App over the internet, and the NetworkPolicy being **enforced** (the backend can reach postgres, the frontend can't):
+
+![app over internet](screenshots/69-eks-app-over-internet.png)
+
+Browser (`tripboard.local`, `argocd.local` and `grafana.local` point to the edge node's public IP, like an `/etc/hosts` entry):
+
+![app browser](screenshots/70-eks-app-browser.png)
+![argocd](screenshots/71-eks-argocd-tripboard.png)
+![grafana](screenshots/72-eks-grafana-tripboard.png)
+
+### AWS console
+
+The console login is not an EKS access entry, so the console can't list Kubernetes objects (pods/nodes "Data unavailable"). Everything AWS-side is visible:
+
+![console cluster](screenshots/73-eks-console-cluster.png)
+![console node groups](screenshots/74-eks-console-node-groups.png)
+![console ec2](screenshots/75-eks-console-ec2-nodes.png)
+![console vpc](screenshots/76-eks-console-vpc.png)
+
+### Destroy
+
+First the app workloads and the postgres PVC are deleted, so the EBS CSI driver deletes the EBS volume (Terraform doesn't know about that volume). Deleting only the Argo CD `Application` is not enough: without the `resources-finalizer.argocd.argoproj.io` finalizer it does not cascade, and the PVC hung in `Terminating` because the postgres pod still used it. Then `terraform destroy`. Afterwards the account has no clusters, instances, volumes, NAT gateways, Elastic IPs or buckets left.
+
+![destroy](screenshots/77-eks-terraform-destroy.png)
+
+What it cost: EKS control plane $0.10/h + 2 × m7i-flex.large + 1 × t3.small + NAT gateway - roughly $0.45/h, paid from the free-plan credits. My first destroy attempt died together with Docker Desktop on my laptop, so the cluster ran about 20 hours instead of 3 before I noticed. Lesson: check the cloud side (`aws eks list-clusters`) after a destroy instead of trusting that the command ran - or set an AWS Budget alert.
 
 ## 4. CI/CD pipeline
 
@@ -257,10 +360,13 @@ App through the Ingress:
 - GitOps turns deployments and rollbacks into commits. Every fix in the challenge was a reviewed-looking commit or a `git revert`, and Argo CD's history matches the git history.
 - Readiness probes + rolling updates contain most bad releases. A single-replica StatefulSet has no such safety net, and needs manual action after a failed rollout.
 - Terraform for the whole platform (cluster, add-ons, secrets) means I can destroy and rebuild everything in about 10 minutes, which I had to do once after Docker crashed.
+- Moving from kind to EKS needed changes only in Terraform (cluster, storage, ingress); the chart and the GitOps files stayed the same. The surprises were account limits (no load balancers) and AWS add-ons using host ports - things an emulator never shows.
 
 ## Known limitations
 
-- Runs locally: **kind instead of EKS**, **LocalStack instead of AWS** (no account). `eks.tf` is ready for real AWS but untested there.
+- The full GitOps / troubleshooting work ran on kind + LocalStack. The EKS run on real AWS ([3b](#3b-real-aws-run-eks)) covered infra, deploy, monitoring and was then destroyed to save credits.
+- On EKS, ingress goes through a single public edge node instead of an AWS load balancer (the account can't create load balancers yet). One edge node = single point of failure; with a normal account this would be an NLB.
+- EKS API endpoint is public (needed for kubectl from my machine); in production I'd limit `public_access_cidrs` or use only the private endpoint + VPN.
 - Single Postgres instance, no automated backups yet (the S3 bucket exists for that; a CronJob with `pg_dump` would be next).
 - Grafana admin password is in the values file (lab only), and Argo CD uses its generated initial admin password.
 - No TLS on the ingress (would use cert-manager in a real setup).
