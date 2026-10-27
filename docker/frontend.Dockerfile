@@ -1,5 +1,5 @@
 # ---- build: compile the React app ----
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY application/frontend/package.json application/frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
