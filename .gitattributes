@@ -1,0 +1,3 @@
+# shell scripts are copied into linux images; a CRLF checkout (core.autocrlf on Windows)
+# breaks them with "/bin/sh^M: not found"
+*.sh text eol=lf
