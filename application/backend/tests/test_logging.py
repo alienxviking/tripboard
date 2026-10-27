@@ -1,7 +1,7 @@
 import json
 import logging
 
-from app.logging_config import JsonFormatter
+from app.logging_config import JsonFormatter, configure_logging
 
 
 def _access_records(caplog):
@@ -64,3 +64,15 @@ def test_probes_are_only_logged_at_debug(client, caplog):
     caplog.set_level(logging.DEBUG, logger="tripboard.access")
     client.get("/health")
     assert [r.levelno for r in _access_records(caplog)] == [logging.DEBUG]
+
+
+def test_uvicorn_extras_and_access_log_are_dropped():
+    record = logging.LogRecord("uvicorn.error", logging.INFO, __file__, 1, "Uvicorn running", None, None)
+    record.color_message = "[1mUvicorn running[0m"
+    assert "color_message" not in json.loads(JsonFormatter().format(record))
+
+    access = logging.getLogger("uvicorn.access")
+    access.propagate = True  # what uvicorn leaves it as without --no-access-log
+    configure_logging()
+    assert access.propagate is False and access.handlers == []
+    assert logging.getLogger("uvicorn.error").propagate is True

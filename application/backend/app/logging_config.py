@@ -5,7 +5,8 @@ import sys
 from datetime import datetime, timezone
 
 # attributes every LogRecord has; anything else on a record came from `extra=`
-_STANDARD = set(vars(logging.LogRecord("", 0, "", 0, "", None, None))) | {"message", "asctime", "taskName"}
+# (color_message is uvicorn's ANSI-coloured copy of msg)
+_STANDARD = set(vars(logging.LogRecord("", 0, "", 0, "", None, None))) | {"message", "asctime", "taskName", "color_message"}
 
 
 class JsonFormatter(logging.Formatter):
@@ -31,9 +32,12 @@ def configure_logging(level: str = "INFO") -> None:
     root.handlers = [handler]
     root.setLevel(level.upper())
     # uvicorn sets up its own plain-text handlers before it imports the app; send its
-    # startup/error lines through the JSON handler instead (access logs are off, the
-    # request middleware in main.py writes those)
-    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+    # startup/error lines through the JSON handler instead
+    for name in ("uvicorn", "uvicorn.error"):
         logger = logging.getLogger(name)
         logger.handlers = []
         logger.propagate = True
+    # the request middleware in main.py writes the access log, so uvicorn's is dropped
+    access = logging.getLogger("uvicorn.access")
+    access.handlers = []
+    access.propagate = False

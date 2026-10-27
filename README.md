@@ -7,7 +7,7 @@ Snehangshu Roy. Started as the capstone of my DevOps course (it lived in [devops
 ```
 tripboard/
 ├── application/
-│   ├── backend/            FastAPI + SQLAlchemy + Alembic, /metrics, JSON logs, 15 pytest tests
+│   ├── backend/            FastAPI + SQLAlchemy + Alembic, /metrics, JSON logs, 16 pytest tests
 │   └── frontend/           React (Vite)
 ├── docker/                 backend + frontend Dockerfiles (multi-stage, non-root), nginx template, docker-compose.yml
 ├── kubernetes/             namespace with Pod Security "restricted"
