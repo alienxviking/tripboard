@@ -6,10 +6,10 @@ environment: production
 image:
   backend:
     repository: ghcr.io/alienxviking/tripboard-backend
-    tag: "25eb7f6"
+    tag: "e5a4d51"
   frontend:
     repository: ghcr.io/alienxviking/tripboard-frontend
-    tag: "25eb7f6"
+    tag: "e5a4d51"
 
 backend:
   autoscaling:
