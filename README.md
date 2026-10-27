@@ -7,7 +7,7 @@ Snehangshu Roy. Started as the capstone of my DevOps course (it lived in [devops
 ```
 tripboard/
 ├── application/
-│   ├── backend/            FastAPI + SQLAlchemy + Alembic, /metrics, 9 pytest tests
+│   ├── backend/            FastAPI + SQLAlchemy + Alembic, /metrics, JSON logs, 15 pytest tests
 │   └── frontend/           React (Vite)
 ├── docker/                 backend + frontend Dockerfiles (multi-stage, non-root), nginx template, docker-compose.yml
 ├── kubernetes/             namespace with Pod Security "restricted"
@@ -20,6 +20,44 @@ tripboard/
 ├── troubleshooting/        final troubleshooting challenge write-up
 └── screenshots/
 ```
+
+## Quickstart
+
+Needs Docker only:
+
+```bash
+git clone https://github.com/alienxviking/tripboard.git && cd tripboard
+docker compose -f docker/docker-compose.yml up --build -d
+curl localhost:8000/health        # {"status":"ok","version":"dev"}
+```
+
+The app is on http://localhost:3000 (the API is proxied under `/api`) and the backend on http://localhost:8000. `docker compose -f docker/docker-compose.yml down -v` removes it again, database volume included.
+
+Backend tests, the same commands CI runs:
+
+```bash
+cd application/backend
+pip install -r requirements.txt -r requirements-dev.txt
+flake8 . && pytest -v
+```
+
+The tests use an in-memory SQLite database, so they need no Postgres. The lock files are compiled for Linux (CI and the image use them), so on Windows run this in WSL or a `python:3.12` container.
+
+## Configuration
+
+Nothing has to be set to run it locally; [.env.example](.env.example) lists every variable with its default.
+
+| Variable | Read by | Default | |
+|---|---|---|---|
+| `DATABASE_URL` | backend | `postgresql+psycopg://tripboard:tripboard@localhost:5432/tripboard` | SQLAlchemy URL; compose and the Helm chart set their own |
+| `APP_VERSION` | backend | `dev` | the image build sets it to the commit SHA |
+| `ENVIRONMENT` | backend | `local` | shown by `/api/info` |
+| `APP_NAME` | backend | `TripBoard API` | |
+| `LOG_LEVEL` | backend | `INFO` | JSON logs on stdout, one line per request (method, path, status, duration, request id); `DEBUG` adds the probe and scrape requests |
+| `POSTGRES_PASSWORD` | docker compose | `tripboard-local` | local Postgres password |
+| `BACKEND_URL` | frontend nginx | set by compose / Helm | where `/api` is proxied |
+
+Python dependencies are pinned with pip-tools: edit `requirements.in` / `requirements-dev.in` and run `pip-compile` to update the `.txt` lock files. The frontend is pinned by `package-lock.json` (CI uses `npm ci`). Dependabot opens weekly update PRs for pip, npm, the Docker base images, Terraform providers and the GitHub Actions.
 
 ---
 
