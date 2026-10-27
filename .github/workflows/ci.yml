@@ -58,7 +58,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
-      - run: npm install --no-audit --no-fund
+          cache: npm
+          cache-dependency-path: application/frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
       - run: npm run build
       - uses: actions/upload-artifact@v5
         with:
@@ -95,7 +97,7 @@ jobs:
         run: pip-audit -r application/backend/requirements.txt --desc
       - name: npm audit (frontend dependencies)
         working-directory: application/frontend
-        run: npm install --no-fund --package-lock-only && npm audit --audit-level=high
+        run: npm audit --audit-level=high
 
   secret-scan:
     name: Secret scan - Gitleaks
