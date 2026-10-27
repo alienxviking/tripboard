@@ -6,4 +6,6 @@ useDefault = true
 [allowlist]
 description = "local dev defaults and test data, not real secrets"
 regexes = ['''tripboard-local''', '''change-me-dev''']
-paths = ['''application/backend/tests/''']
+# the scan runs from the repo root, so skip git's own directory (actions/checkout
+# writes the job token into .git/config)
+paths = ['''application/backend/tests/''', '''(^|/)\.git/''']

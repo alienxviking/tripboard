@@ -1,11 +1,11 @@
-# Final DevOps Project - TripBoard
+# TripBoard
 
 **TripBoard** is a small trip planner (plan trips, track budgets, move them from *planned → booked → done*). The app itself is simple on purpose. The point of the project is everything around it: containers, CI/CD with security gates, Kubernetes + Helm, infrastructure as code, monitoring and GitOps, plus a troubleshooting challenge on the running system.
 
-Snehangshu Roy
+Snehangshu Roy. Started as the capstone of my DevOps course (it lived in [devops-homework](https://github.com/alienxviking/devops-homework) until it moved here with its history).
 
 ```
-final-devops-project/
+tripboard/
 ├── application/
 │   ├── backend/            FastAPI + SQLAlchemy + Alembic, /metrics, 9 pytest tests
 │   └── frontend/           React (Vite)
@@ -13,7 +13,7 @@ final-devops-project/
 ├── kubernetes/             namespace with Pod Security "restricted"
 ├── helm/tripboard/         Helm chart: backend, frontend, postgres StatefulSet, ingress, HPA, probes, NetworkPolicy, ServiceMonitor, helm test
 ├── terraform/              kind or EKS cluster + cluster add-ons (Helm) + app bootstrap + AWS VPC/NAT/S3
-├── .github/workflows/      -> pipeline lives in the repo root: ../.github/workflows/final-project.yml
+├── .github/workflows/      ci.yml: the CI/CD pipeline
 ├── security/               bandit + gitleaks configs
 ├── monitoring/             kube-prometheus-stack values, Grafana dashboard, alert rules
 ├── gitops/                 Argo CD values, Argo CD Application, values-prod.yaml (updated by CI)
@@ -238,7 +238,7 @@ What it cost: EKS control plane $0.10/h + 2 × m7i-flex.large + 1 × t3.small + 
 
 ## 4. CI/CD pipeline
 
-[`.github/workflows/final-project.yml`](../.github/workflows/final-project.yml), runs on every push to `main` that touches the project (GitOps commits and docs are excluded so the bot commit doesn't loop).
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml), runs on every push to `main` except GitOps, docs and screenshot changes (so the bot commit doesn't loop), and on pull requests that touch the app, Dockerfiles or chart.
 
 | # | Job | Fails the pipeline when |
 |---|---|---|
@@ -327,7 +327,7 @@ App through the Ingress:
 
 ## 8. GitOps (Argo CD)
 
-[gitops/argocd-application.yaml](gitops/argocd-application.yaml) is a **multi-source** Application: the chart from `final-devops-project/helm/tripboard` plus `$values/final-devops-project/gitops/values-prod.yaml`. It has auto-sync, `prune` and `selfHeal`. The only manual step after Terraform is applying this file once.
+[gitops/argocd-application.yaml](gitops/argocd-application.yaml) is a **multi-source** Application: the chart from `helm/tripboard` plus `$values/gitops/values-prod.yaml`. It has auto-sync, `prune` and `selfHeal`. The only manual step after Terraform is applying this file once.
 
 ![bootstrap](screenshots/15-gitops-bootstrap.png)
 

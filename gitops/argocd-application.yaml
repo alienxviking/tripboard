@@ -9,14 +9,14 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://github.com/alienxviking/devops-homework.git
+    - repoURL: https://github.com/alienxviking/tripboard.git
       targetRevision: main
-      path: final-devops-project/helm/tripboard
+      path: helm/tripboard
       helm:
         releaseName: tripboard
         valueFiles:
-          - $values/final-devops-project/gitops/values-prod.yaml
-    - repoURL: https://github.com/alienxviking/devops-homework.git
+          - $values/gitops/values-prod.yaml
+    - repoURL: https://github.com/alienxviking/tripboard.git
       targetRevision: main
       ref: values
   destination:
