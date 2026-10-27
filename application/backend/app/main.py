@@ -1,4 +1,8 @@
-from fastapi import Depends, FastAPI, HTTPException
+import logging
+import time
+import uuid
+
+from fastapi import Depends, FastAPI, HTTPException, Request
 from prometheus_client import Gauge
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import func, select, text
@@ -6,10 +10,39 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
+from app.logging_config import configure_logging
 from app.models import Trip
 from app.schemas import TripIn, TripOut
 
+configure_logging(settings.log_level)
+access_log = logging.getLogger("tripboard.access")
+
 app = FastAPI(title=settings.app_name, version=settings.app_version)
+
+# kubelet probes and prometheus scrapes hit these every few seconds; logged at debug only
+QUIET_PATHS = {"/health", "/ready", "/metrics"}
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """One JSON line per request; the request id is reused from X-Request-ID or generated, and echoed back."""
+    request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
+    start = time.perf_counter()
+    fields = {"request_id": request_id, "method": request.method, "path": request.url.path}
+    try:
+        response = await call_next(request)
+    except Exception:
+        access_log.exception("request failed", extra={**fields, "status": 500, "duration_ms": _ms_since(start)})
+        raise
+    response.headers["X-Request-ID"] = request_id
+    level = logging.DEBUG if request.url.path in QUIET_PATHS else logging.INFO
+    access_log.log(level, "request", extra={**fields, "status": response.status_code, "duration_ms": _ms_since(start)})
+    return response
+
+
+def _ms_since(start: float) -> float:
+    return round((time.perf_counter() - start) * 1000, 2)
+
 
 # http_requests_total, http_request_duration_seconds, ... on /metrics
 Instrumentator(excluded_handlers=["/metrics", "/health", "/ready"]).instrument(app).expose(app, include_in_schema=False)
