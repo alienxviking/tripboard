@@ -4,7 +4,7 @@
 #
 #    pip-compile --no-emit-index-url --output-file=requirements.txt --strip-extras requirements.in
 #
-alembic==1.20.0
+alembic==1.20.1
     # via -r requirements.in
 annotated-doc==0.0.5
     # via fastapi
@@ -16,7 +16,7 @@ anyio==4.15.1
     #   watchfiles
 click==8.5.0
     # via uvicorn
-fastapi==0.143.0
+fastapi==0.162.0
     # via -r requirements.in
 h11==0.16.0
     # via uvicorn
@@ -46,7 +46,7 @@ pydantic==2.14.1
     #   pydantic-settings
 pydantic-core==2.50.1
     # via pydantic
-pydantic-settings==2.15.0
+pydantic-settings==2.16.1
     # via -r requirements.in
 python-dotenv==1.2.4
     # via
@@ -54,7 +54,7 @@ python-dotenv==1.2.4
     #   uvicorn
 pyyaml==6.0.3
     # via uvicorn
-sqlalchemy==2.1.4
+sqlalchemy==2.1.6
     # via
     #   -r requirements.in
     #   alembic
@@ -71,6 +71,7 @@ typing-extensions==4.16.0
     #   psycopg
     #   pydantic
     #   pydantic-core
+    #   pydantic-settings
     #   sqlalchemy
     #   starlette
     #   typing-inspection
