@@ -39,7 +39,7 @@ jobs:
       - run: flake8 .
       - name: pytest (fails the build on any failing test)
         run: pytest -v --cov=app --cov-report=term --cov-report=xml --junitxml=test-results.xml
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-test-results
@@ -62,7 +62,7 @@ jobs:
           cache-dependency-path: application/frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npm run build
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: application/frontend/dist
@@ -128,7 +128,7 @@ jobs:
             --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
             tripboard-${{ matrix.component }}:${GITHUB_SHA::7}
       - run: docker save tripboard-${{ matrix.component }}:${GITHUB_SHA::7} -o ${{ matrix.component }}.tar
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: image-${{ matrix.component }}
           path: ${{ matrix.component }}.tar
