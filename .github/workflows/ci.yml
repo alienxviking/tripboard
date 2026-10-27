@@ -17,6 +17,12 @@ on:
       - ".github/workflows/ci.yml"
   workflow_dispatch:
 
+# a newer push cancels the run still going for an older one, so only the
+# latest commit gets deployed and two runs never race on values-prod.yaml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io/${{ github.repository_owner }}
 
@@ -202,16 +208,21 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      - name: Set new image tags in gitops/values-prod.yaml
+      - name: Set new image tags and push
+        # starts from the current main and re-applies the tag on every try,
+        # instead of rebasing a stale commit onto a tag line that moved
         run: |
           SHORT=${GITHUB_SHA::7}
-          sed -i -E "s/^(\s+tag: )\"[0-9a-f]{7}\"/\1\"$SHORT\"/" gitops/values-prod.yaml
-          git diff
-      - name: Commit and push
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add gitops/values-prod.yaml
-          git commit -m "deploy: tripboard ${GITHUB_SHA::7}"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            sed -i -E "s/^(\s+tag: )\"[0-9a-f]{7}\"/\1\"$SHORT\"/" gitops/values-prod.yaml
+            if git diff --quiet; then echo "already at $SHORT"; exit 0; fi
+            git diff
+            git commit -am "deploy: tripboard $SHORT"
+            git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
