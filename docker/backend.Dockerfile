@@ -1,12 +1,12 @@
 # ---- build: install python deps into a virtualenv ----
-FROM python:3.12-alpine AS build
+FROM python:3.15-alpine AS build
 WORKDIR /app
 RUN python -m venv /venv
 COPY application/backend/requirements.txt .
 RUN /venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # ---- runtime: no compiler, no pip cache, non-root ----
-FROM python:3.12-alpine
+FROM python:3.15-alpine
 RUN apk upgrade --no-cache && adduser -D -u 10001 app
 WORKDIR /app
 COPY --from=build /venv /venv
