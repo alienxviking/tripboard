@@ -36,9 +36,9 @@ prometheus-client==0.26.0
     #   prometheus-fastapi-instrumentator
 prometheus-fastapi-instrumentator==8.1.0
     # via -r requirements.in
-psycopg==3.3.6
+psycopg==3.3.8
     # via -r requirements.in
-psycopg-binary==3.3.6
+psycopg-binary==3.3.8
     # via psycopg
 pydantic==2.14.1
     # via
@@ -46,7 +46,7 @@ pydantic==2.14.1
     #   pydantic-settings
 pydantic-core==2.50.1
     # via pydantic
-pydantic-settings==2.16.1
+pydantic-settings==2.16.2
     # via -r requirements.in
 python-dotenv==1.2.4
     # via
@@ -54,7 +54,7 @@ python-dotenv==1.2.4
     #   uvicorn
 pyyaml==6.0.3
     # via uvicorn
-sqlalchemy==2.1.6
+sqlalchemy==2.1.8
     # via
     #   -r requirements.in
     #   alembic
