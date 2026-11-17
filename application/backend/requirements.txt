@@ -12,11 +12,12 @@ annotated-types==0.8.0
     # via pydantic
 anyio==4.15.1
     # via
+    #   fastapi
     #   starlette
     #   watchfiles
 click==8.5.0
     # via uvicorn
-fastapi==0.162.0
+fastapi==0.162.7
     # via -r requirements.in
 h11==0.16.0
     # via uvicorn
@@ -36,9 +37,9 @@ prometheus-client==0.26.0
     #   prometheus-fastapi-instrumentator
 prometheus-fastapi-instrumentator==8.1.0
     # via -r requirements.in
-psycopg==3.3.6
+psycopg==3.3.9
     # via -r requirements.in
-psycopg-binary==3.3.6
+psycopg-binary==3.3.9
     # via psycopg
 pydantic==2.14.1
     # via
@@ -46,7 +47,7 @@ pydantic==2.14.1
     #   pydantic-settings
 pydantic-core==2.50.1
     # via pydantic
-pydantic-settings==2.16.1
+pydantic-settings==2.16.3
     # via -r requirements.in
 python-dotenv==1.2.4
     # via
@@ -54,7 +55,7 @@ python-dotenv==1.2.4
     #   uvicorn
 pyyaml==6.0.3
     # via uvicorn
-sqlalchemy==2.1.6
+sqlalchemy==2.1.8
     # via
     #   -r requirements.in
     #   alembic
